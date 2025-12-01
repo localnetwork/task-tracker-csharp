@@ -11,6 +11,7 @@
           "DotNetEnv": "3.1.1",
           "FluentValidation": "12.1.0",
           "MySql.Data": "9.5.0",
+          "Newtonsoft.Json": "13.0.4",
           "System.IdentityModel.Tokens.Jwt": "8.15.0"
         },
         "runtime": {
@@ -161,6 +162,14 @@
             "rid": "win-x64",
             "assetType": "native",
             "fileVersion": "4.3.0.1"
+          }
+        }
+      },
+      "Newtonsoft.Json/13.0.4": {
+        "runtime": {
+          "lib/net6.0/Newtonsoft.Json.dll": {
+            "assemblyVersion": "13.0.0.0",
+            "fileVersion": "13.0.4.30916"
           }
         }
       },
@@ -329,6 +338,13 @@
       "sha512": "sha512-pbIrDv7vuvMlok6ldjliFOeb5fpGofAInUhG/8LraQBqT2a2xZTcAVjm/GyfZ9ZyjZeHJLWuMRbe0uI98sCoWg==",
       "path": "mysql.data/9.5.0",
       "hashPath": "mysql.data.9.5.0.nupkg.sha512"
+    },
+    "Newtonsoft.Json/13.0.4": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-pdgNNMai3zv51W5aq268sujXUyx7SNdE2bj1wZcWjAQrKMFZV260lbqYop1d2GM67JI1huLRwxo9ZqnfF/lC6A==",
+      "path": "newtonsoft.json/13.0.4",
+      "hashPath": "newtonsoft.json.13.0.4.nupkg.sha512"
     },
     "Sprache/2.3.1": {
       "type": "package",

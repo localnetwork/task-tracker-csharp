@@ -8,9 +8,9 @@ using Microsoft.Extensions.Hosting;
 // Check for migration command
 // -------------------------
 if (args.Length > 0 && args[0].ToLower() == "migrate")
-{
+{ 
     Migrator.RunAll();
-    return; 
+    return;  
 }
 
 Console.WriteLine("✔ App running normally...");

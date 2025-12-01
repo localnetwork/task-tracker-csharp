@@ -51,3 +51,5 @@ C:\Users\Diome Nike\Desktop\personal\NET\task-organizer\obj\Debug\net10.0\static
 C:\Users\Diome Nike\Desktop\personal\NET\task-organizer\obj\Debug\net10.0\staticwebassets.development.json
 C:\Users\Diome Nike\Desktop\personal\NET\task-organizer\obj\Debug\net10.0\staticwebassets.build.endpoints.json
 C:\Users\Diome Nike\Desktop\personal\NET\task-organizer\obj\Debug\net10.0\swae.build.ex.cache
+C:\Users\Diome Nike\Desktop\personal\NET\task-organizer\obj\Debug\net10.0\task-organizer.sourcelink.json
+C:\Users\Diome Nike\Desktop\personal\NET\task-organizer\bin\Debug\net10.0\Newtonsoft.Json.dll

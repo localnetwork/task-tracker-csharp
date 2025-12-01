@@ -10,7 +10,7 @@ namespace TaskOrganizer.Validators
             RuleFor(user => user.Username)
                 .NotEmpty().WithMessage("Username cannot be empty.");
 
-            RuleFor(user => user.Email)
+            RuleFor(user => user.Email) 
                 .NotEmpty().WithMessage("Email cannot be empty.")
                 .EmailAddress().WithMessage("Email is not valid.");
 
@@ -18,5 +18,5 @@ namespace TaskOrganizer.Validators
                 .NotEmpty().WithMessage("Password cannot be empty.")
                 .MinimumLength(6).WithMessage("Password must be at least 6 characters long.");
         }
-    } 
-} 
+    }
+}

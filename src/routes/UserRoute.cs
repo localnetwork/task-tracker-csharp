@@ -14,7 +14,7 @@ namespace TaskOrganizer.Routes
             var controller = new UsersController();
 
             // POST /api/users -> create a new user
-            app.MapPost("/users", async (HttpContext context) =>
+            app.MapPost("/api/users", async (HttpContext context) =>
             {
                 try
                 {
@@ -26,7 +26,7 @@ namespace TaskOrganizer.Routes
                         context.Response.StatusCode = 400; // Bad Request
                         await context.Response.WriteAsync("Invalid user data.");
                         return;
-                    }
+                    } 
 
                     // Validate and create user
                     controller.CreateUser(user);
@@ -44,7 +44,7 @@ namespace TaskOrganizer.Routes
                     context.Response.StatusCode = 500; // Internal Server Error
                     await context.Response.WriteAsJsonAsync(new { error = ex.Message });
                 }
-            });
+            }); 
             app.MapGet("/api/hello", () =>
             {
                 return new { message = "Hello, World!" }; 
