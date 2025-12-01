@@ -25,25 +25,34 @@ cd task-tracker-csharp
 ```
 
 2. Configure the .env file with your database credentials:
-   DB_SERVER=localhost
-   DB_PORT=3306
-   DB_NAME=task_tracker
-   DB_USER=root
-   DB_PASS=your_password
+
+```
+DB_SERVER=localhost
+DB_PORT=3306
+DB_NAME=task_tracker
+DB_USER=root
+DB_PASS=your_password
+```
 
 3. Run the migration to create the necessary database tables:
 
+```
 dotnet run --migrate
+```
 
 4. Start the application:
 
+```
 dotnet run
+```
 
 # Project Structure
 
+```
 YourAppFolder/
 ├── config/ # Database connection and configuration
 ├── schema/ # Database migration scripts
 ├── models/ # Entity models
 ├── validators/ # FluentValidation validators
 └── Program.cs # Entry point
+```
