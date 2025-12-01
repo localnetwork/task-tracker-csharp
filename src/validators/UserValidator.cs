@@ -19,9 +19,13 @@ namespace TaskOrganizer.Validators
                 .NotEmpty().WithMessage("Password cannot be empty.")
                 .MinimumLength(6).WithMessage("Password must be at least 6 characters.");
 
+            RuleFor(user => user.ConfirmPassword)
+                .NotEmpty().WithMessage("Confirm Password cannot be empty.") 
+                .Equal(user => user.Password).WithMessage("Passwords do not match.");
+
             RuleFor(user => user.Firstname)
                 .NotEmpty().WithMessage("Firstname cannot be empty.");
-
+ 
             RuleFor(user => user.Lastname)
                 .NotEmpty().WithMessage("Lastname cannot be empty.");
         }
@@ -48,12 +52,12 @@ namespace TaskOrganizer.Validators
     {
         public UserLoginValidator()
         {
-            RuleFor(user => user.Email) 
+            RuleFor(user => user.Email)
                 .NotEmpty().WithMessage("Email cannot be empty.")
-                .EmailAddress().WithMessage("Email is not valid."); 
- 
-            RuleFor(user => user.Password) 
+                .EmailAddress().WithMessage("Email is not valid.");
+
+            RuleFor(user => user.Password)
                 .NotEmpty().WithMessage("Password cannot be empty.");
-        } 
+        }
     }
 }
