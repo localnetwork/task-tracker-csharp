@@ -49,10 +49,11 @@ dotnet run
 # Project Structure
 
 ```bash
-YourAppFolder/
+src/
 ├── config/ # Database connection and configuration
 ├── schema/ # Database migration scripts
 ├── models/ # Entity models
 ├── validators/ # FluentValidation validators
+├── routes/ # FluentValidation validators
 └── Program.cs # Entry point
 ```
