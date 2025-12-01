@@ -26,7 +26,7 @@ cd task-tracker-csharp
 
 2. Configure the .env file with your database credentials:
 
-```
+```bash
 DB_SERVER=localhost
 DB_PORT=3306
 DB_NAME=task_tracker
@@ -36,19 +36,19 @@ DB_PASS=your_password
 
 3. Run the migration to create the necessary database tables:
 
-```
+```bash
 dotnet run --migrate
 ```
 
 4. Start the application:
 
-```
+```bash
 dotnet run
 ```
 
 # Project Structure
 
-```
+```bash
 YourAppFolder/
 ├── config/ # Database connection and configuration
 ├── schema/ # Database migration scripts
