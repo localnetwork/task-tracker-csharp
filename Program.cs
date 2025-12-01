@@ -13,17 +13,34 @@ if (args.Length > 0 && args[0].ToLower() == "migrate")
     return;  
 }
 
-Console.WriteLine("✔ App running normally...");
+Console.WriteLine("✔ App running normally..."); 
 
 // -------------------------
 // Start Web API
 // -------------------------
 var builder = WebApplication.CreateBuilder(args);
+
+// -------------------------
+// Configure CORS (allow all)
+// -------------------------
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy
+            .AllowAnyOrigin()
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
 var app = builder.Build();
+
+// Use CORS middleware
+app.UseCors();
 
 // Register all routes dynamically from src/routes
 Router.RegisterAll(app);
- 
- 
+
 // Run the app 
 app.Run("http://localhost:5001");
