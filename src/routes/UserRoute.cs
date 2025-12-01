@@ -2,53 +2,44 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using TaskOrganizer.Controllers;
 using TaskOrganizer.Models;
-using FluentValidation;
 
-namespace TaskOrganizer.Routes 
+namespace TaskOrganizer.Routes
 {
     public static class UserRoute
     {
-        // This is the method Router.cs will call
-        public static void Register(WebApplication app) 
+        public static void Register(WebApplication app)
         {
             var controller = new UsersController();
 
-            // POST /api/users -> create a new user
-            app.MapPost("/api/users", async (HttpContext context) =>
-            {
-                try
-                {
-                    // Parse request body to User model
-                    var user = await context.Request.ReadFromJsonAsync<User>();
+            app.MapPost("/api/register", async (HttpContext context) =>
+            { 
+                var user = await context.Request.ReadFromJsonAsync<User>();
 
-                    if (user == null)
-                    {
-                        context.Response.StatusCode = 400; // Bad Request
-                        await context.Response.WriteAsync("Invalid user data.");
-                        return;
-                    } 
+                if (user == null)
+                    return Results.BadRequest(new { error = "Invalid user data." });
 
-                    // Validate and create user
-                    controller.CreateUser(user);
+                var response = controller.CreateUser(user);
 
-                    context.Response.StatusCode = 201; // Created
-                    await context.Response.WriteAsJsonAsync(new { message = "User created successfully", userId = user.Id });
-                }
-                catch (ValidationException ex)
-                {
-                    context.Response.StatusCode = 400; // Bad Request
-                    await context.Response.WriteAsJsonAsync(new { error = ex.Message });
-                }
-                catch (Exception ex)
-                {
-                    context.Response.StatusCode = 500; // Internal Server Error
-                    await context.Response.WriteAsJsonAsync(new { error = ex.Message });
-                }
-            }); 
-            app.MapGet("/api/hello", () =>
-            {
-                return new { message = "Hello, World!" }; 
+                if (response.Error != null)
+                    return Results.Json(new { error = response.Error }, statusCode: response.StatusCode);
+
+                return Results.Json(response.Data, statusCode: response.StatusCode);
             });
-        }   
+
+            app.MapPost("/api/login", async (HttpContext context) =>
+            {
+                var user = await context.Request.ReadFromJsonAsync<User>();
+
+                if (user == null)
+                    return Results.BadRequest(new { error = "Invalid user data." });
+ 
+                var response = controller.Login(user.Email, user.Password);
+
+                if (response.Error != null)
+                    return Results.Json(new { error = response.Error }, statusCode: response.StatusCode);
+
+                return Results.Json(response.Data, statusCode: response.StatusCode);
+            });
+        }
     } 
-} 
+}

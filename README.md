@@ -29,15 +29,17 @@ cd task-tracker-csharp
 ```bash
 DB_SERVER=localhost
 DB_PORT=3306
-DB_NAME=task_tracker
-DB_USER=root
-DB_PASS=your_password
+DB_NAME=
+DB_USER=
+DB_PASS=
+JWT_SECRET=
+APP_NAME=
 ```
 
 3. Run the migration to create the necessary database tables:
 
 ```bash
-dotnet run --migrate
+dotnet run migrate
 ```
 
 4. Start the application:

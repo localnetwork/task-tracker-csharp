@@ -5,24 +5,117 @@ using TaskOrganizer.Validators;
 
 namespace TaskOrganizer.Controllers
 {
-    public class UsersController
+    // Generic response wrapper
+    public class ControllerResult<T>
     {
-        private readonly UserValidator _validator = new UserValidator();
+        public int StatusCode { get; set; }
+        public T? Data { get; set; }
+        public string? Error { get; set; }
+    }
 
-        public void CreateUser(User user)
-        { 
-            // Validate user using FluentValidation
-            ValidationResult result = _validator.Validate(user);
+    // DTOs for login response
+    public class UserData
+    {
+        public int Id { get; set; }
+        public string Email { get; set; } = "";
+        public string Firstname { get; set; } = "";
+        public string Lastname { get; set; } = "";
+        public DateTime CreatedAt { get; set; }
+    }
+
+    public class LoginResponse
+    {
+        public string Token { get; set; } = "";
+        public UserData User { get; set; } = new UserData();
+    }
+
+    public class UsersController 
+    {
+        private readonly UserRegisterValidator _registerValidator = new UserRegisterValidator();
+        private readonly UserLoginValidator _loginValidator = new UserLoginValidator();
+
+        // Registration
+        public ControllerResult<User> CreateUser(User user)
+        {
+            ValidationResult result = _registerValidator.Validate(user);
 
             if (!result.IsValid)
             {
-                // Combine all error messages
-                string errors = string.Join("; ", result.Errors.Select(e => e.ErrorMessage));
-                throw new ValidationException(errors);
+                string errors = string.Join(". ", 
+                    result.Errors.Select(e => e.ErrorMessage.TrimEnd('.'))
+                ) + ".";
+
+                return new ControllerResult<User>
+                {
+                    StatusCode = 400,
+                    Error = errors
+                };
             }
 
-            // Save to database
+            // Save user into DB
             user.Create();
+
+            return new ControllerResult<User>
+            {
+                StatusCode = 201,
+                Data = new User
+                {
+                    Id = user.Id,
+                    Email = user.Email,
+                    Firstname = user.Firstname,
+                    Lastname = user.Lastname,
+                    CreatedAt = user.CreatedAt
+                }
+            };
+        }
+
+        // Login
+        public ControllerResult<LoginResponse> Login(string email, string password)
+        {
+            var tempUser = new User { Email = email, Password = password };
+            ValidationResult result = _loginValidator.Validate(tempUser);
+
+            if (!result.IsValid)
+            {
+                string errors = string.Join(". ",
+                    result.Errors.Select(e => e.ErrorMessage.TrimEnd('.'))
+                ) + ".";
+
+                return new ControllerResult<LoginResponse>
+                {
+                    StatusCode = 400,
+                    Error = errors
+                };
+            }
+
+            // Authenticate user
+            User? dbUser = User.GetByEmail(email);
+            if (dbUser == null || !dbUser.VerifyPassword(password))
+            {
+                return new ControllerResult<LoginResponse>
+                {
+                    StatusCode = 401,
+                    Error = "Invalid email or password."
+                };
+            }
+
+            // Return token + user info
+            return new ControllerResult<LoginResponse>
+            {
+                StatusCode = 200,
+                Data = new LoginResponse
+                {
+                    Token = dbUser.GenerateJwtToken(),
+                    User = new UserData
+                    {
+                        Id = dbUser.Id,  
+                        Email = dbUser.Email,
+                        Firstname = dbUser.Firstname,
+                        Lastname = dbUser.Lastname,
+                        CreatedAt = dbUser.CreatedAt
+                    }
+                }
+            };
         }
     }
 }

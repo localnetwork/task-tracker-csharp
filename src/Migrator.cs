@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using MySql.Data.MySqlClient;
 using TaskOrganizer.Config;
-using TaskOrganizer.Schema; // <-- make sure this is imported
+using TaskOrganizer.Schema;
 
 namespace TaskOrganizer.Migration
 {
@@ -25,11 +27,8 @@ namespace TaskOrganizer.Migration
                 return;
             }
 
-            // MANUALLY ADD SCHEMAS
-            var schemas = new List<(string TableName, Dictionary<string, object> Def)>
-            {
-                ("users", UserSchema.Definition) // <-- add your schema classes here
-            };
+            // AUTO-DISCOVER ALL SCHEMA CLASSES
+            var schemas = DiscoverSchemas();
 
             foreach (var schema in schemas)
             {
@@ -48,7 +47,44 @@ namespace TaskOrganizer.Migration
                 }
             }
 
-            Console.WriteLine("🎉 All migrations finished!");
+            Console.WriteLine("🎉 All migrations finished!"); 
+        }
+
+        private static List<(string TableName, Dictionary<string, object> Def)> DiscoverSchemas()
+        {
+            var schemas = new List<(string, Dictionary<string, object>)>();
+            var assembly = Assembly.GetExecutingAssembly();
+
+            // Find all types in TaskOrganizer.Schema namespace
+            var schemaTypes = assembly.GetTypes()
+                .Where(t => t.Namespace == "TaskOrganizer.Schema" 
+                         && t.IsClass 
+                         && t.IsPublic);
+
+            foreach (var type in schemaTypes)
+            {
+                // Look for TableName property
+                var tableNameProp = type.GetProperty("TableName", 
+                    BindingFlags.Public | BindingFlags.Static);
+                
+                // Look for Definition property
+                var definitionProp = type.GetProperty("Definition", 
+                    BindingFlags.Public | BindingFlags.Static);
+
+                if (tableNameProp != null && definitionProp != null)
+                {
+                    var tableName = tableNameProp.GetValue(null) as string;
+                    var definition = definitionProp.GetValue(null) as Dictionary<string, object>;
+
+                    if (tableName != null && definition != null)
+                    {
+                        schemas.Add((tableName, definition));
+                        Console.WriteLine($"📋 Discovered schema: {type.Name} -> {tableName}");
+                    }
+                }
+            }
+
+            return schemas;
         }
 
         private static string GenerateCreateTable(string table, Dictionary<string, object> def)
@@ -69,4 +105,3 @@ $@"CREATE TABLE IF NOT EXISTS {table} (
         }
     }
 }
- 
