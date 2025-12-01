@@ -50,7 +50,7 @@ namespace TaskOrganizer.Validators
         {
             RuleFor(user => user.Email) 
                 .NotEmpty().WithMessage("Email cannot be empty.")
-                .EmailAddress().WithMessage("Email is not valid.");
+                .EmailAddress().WithMessage("Email is not valid."); 
  
             RuleFor(user => user.Password) 
                 .NotEmpty().WithMessage("Password cannot be empty.");

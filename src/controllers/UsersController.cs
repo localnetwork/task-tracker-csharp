@@ -13,6 +13,7 @@ namespace TaskOrganizer.Controllers
         public int StatusCode { get; set; }
         public T? Data { get; set; }
         public object? Error { get; set; } // Can be string or dictionary
+        public string Message { get; internal set; }
     }
 
     // DTOs for login response
@@ -109,7 +110,8 @@ namespace TaskOrganizer.Controllers
                 return new ControllerResult<LoginResponse>
                 {
                     StatusCode = 401,
-                    Error = new { email = "Invalid email or password." } // structured error
+                    Message = "Invalid email or password.",
+                    Error = new { email = "Invalid email or password.", password = "Invalid email or password." } // structured error
                 };
             }
 
