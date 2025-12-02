@@ -10,7 +10,7 @@ using TaskOrganizer.Middlewares;
 // -------------------------
 if (args.Length > 0 && args[0].ToLower() == "migrate")
 { 
-    Migrator.RunAll();
+    Migrator.RunAll();  
     return;  
 }
 
@@ -42,7 +42,7 @@ var app = builder.Build();
 
 // Use CORS middleware
 app.UseCors();
- 
+
 // Register all routes dynamically from src/routes
 Router.RegisterAll(app);
 

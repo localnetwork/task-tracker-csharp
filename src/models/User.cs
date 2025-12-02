@@ -13,9 +13,20 @@ namespace TaskOrganizer.Models
     {
         public int Id { get; set; }
         public string Password { get; set; } = "";
+        public string ConfirmPassword { get; set; } = "";
         public string Email { get; set; } = "";
         public DateTime CreatedAt { get; set; }
-        public string ConfirmPassword { get; set; } = "";
+
+        public User() : base() { } // for JSON binding
+
+        public User(string firstname, string lastname, string email, string password)
+            : base(firstname, lastname)
+        {
+            Email = email; 
+            Password = password;
+            CreatedAt = DateTime.UtcNow;
+        }
+
 
         private static bool _loaded = false;
 
@@ -29,15 +40,15 @@ namespace TaskOrganizer.Models
         }
 
         // CONSTRUCTOR REQUIRED FOR Person INHERITANCE
-        public User() : base("", "") { } 
+        // public User() : base("", "") { } 
  
-        public User(string firstname, string lastname, string email, string password)
-            : base(firstname, lastname)
-        {
-            Email = email; 
-            Password = password;
-            CreatedAt = DateTime.UtcNow;
-        }
+        // public User(string firstname, string lastname, string email, string password)
+        //     : base(firstname, lastname)
+        // {
+        //     Email = email; 
+        //     Password = password;
+        //     CreatedAt = DateTime.UtcNow;
+        // }
 
         // Create user in database
         public void Create()
@@ -123,15 +134,15 @@ namespace TaskOrganizer.Models
                 claims: claims,
                 expires: DateTime.UtcNow.AddHours(24),
                 signingCredentials: creds 
-            ); 
+            );  
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         } 
 
         public static User? GetProfile(string email)
-    {
+    { 
         using var conn = DatabaseConnection.GetConnection(); 
-        conn.Open();
+        conn.Open(); 
 
         string query = "SELECT id, firstname, lastname, password, email, created_at FROM users WHERE email = @e LIMIT 1";
 

@@ -12,82 +12,77 @@ namespace TaskOrganizer.Migration
     {
         public static void RunAll()
         {
-            Console.WriteLine("🔧 Running migrations...");
+            var createdTables = new List<string>();
 
             using var conn = DatabaseConnection.GetConnection();
             try
             {
                 conn.Open();
-                Console.WriteLine("✅ Connected to database for migration.");
             }
             catch (Exception ex)
             {
                 Console.WriteLine("❌ Cannot connect to database:");
-                Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.ToString());
                 return;
             }
 
-            // AUTO-DISCOVER ALL SCHEMA CLASSES
             var schemas = DiscoverSchemas();
+            if (schemas.Count == 0) return;
 
             foreach (var schema in schemas)
             {
                 string sql = GenerateCreateTable(schema.TableName, schema.Def);
-                Console.WriteLine($"🛠 Creating table: {schema.TableName}");
 
                 try
                 {
                     using var cmd = new MySqlCommand(sql, conn);
                     cmd.ExecuteNonQuery();
-                    Console.WriteLine($"✅ Table created: {schema.TableName}");
+                    createdTables.Add(schema.TableName);
                 }
-                catch (Exception ex)
+                catch
                 {
-                    Console.WriteLine($"❌ Failed to create table {schema.TableName}: {ex.Message}");
+                    // Ignore failures silently
                 }
             }
 
-            Console.WriteLine("🎉 All migrations finished!"); 
+            // Only print names of tables successfully created
+            if (createdTables.Count > 0)
+            {
+                Console.WriteLine("✅ Tables created:");
+                foreach (var table in createdTables)
+                    Console.WriteLine($"- {table}");
+            }
         }
 
-        private static List<(string TableName, Dictionary<string, object> Def)> DiscoverSchemas()
+        private static List<(string TableName, Dictionary<string, string> Def)> DiscoverSchemas()
         {
-            var schemas = new List<(string, Dictionary<string, object>)>();
+            var schemas = new List<(string, Dictionary<string, string>)>();
             var assembly = Assembly.GetExecutingAssembly();
 
-            // Find all types in TaskOrganizer.Schema namespace
             var schemaTypes = assembly.GetTypes()
-                .Where(t => t.Namespace == "TaskOrganizer.Schema" 
-                         && t.IsClass 
+                .Where(t => t.Namespace == "TaskOrganizer.Schema"
+                         && t.IsClass
                          && t.IsPublic);
 
             foreach (var type in schemaTypes)
             {
-                // Look for TableName property
-                var tableNameProp = type.GetProperty("TableName", 
-                    BindingFlags.Public | BindingFlags.Static);
-                
-                // Look for Definition property
-                var definitionProp = type.GetProperty("Definition", 
-                    BindingFlags.Public | BindingFlags.Static);
+                var tableNameProp = type.GetProperty("TableName", BindingFlags.Public | BindingFlags.Static);
+                var definitionProp = type.GetProperty("Definition", BindingFlags.Public | BindingFlags.Static);
 
                 if (tableNameProp != null && definitionProp != null)
                 {
                     var tableName = tableNameProp.GetValue(null) as string;
-                    var definition = definitionProp.GetValue(null) as Dictionary<string, object>;
+                    var definition = definitionProp.GetValue(null) as Dictionary<string, string>;
 
                     if (tableName != null && definition != null)
-                    {
                         schemas.Add((tableName, definition));
-                        Console.WriteLine($"📋 Discovered schema: {type.Name} -> {tableName}");
-                    }
                 }
             }
 
             return schemas;
         }
 
-        private static string GenerateCreateTable(string table, Dictionary<string, object> def)
+        private static string GenerateCreateTable(string table, Dictionary<string, string> def)
         {
             var columns = new List<string>();
             foreach (var kv in def)

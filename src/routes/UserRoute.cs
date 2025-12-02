@@ -17,18 +17,45 @@ namespace TaskOrganizer.Routes
             var controller = new UsersController();
 
             app.MapPost("/api/register", async (HttpContext context) =>
-            { 
-                var user = await context.Request.ReadFromJsonAsync<User>();
+            {
+                try
+                {   
+                    var user = await context.Request.ReadFromJsonAsync<User>(); 
 
-                if (user == null)
-                    return Results.BadRequest(new { error = "Invalid user data." });
+                    if (user == null)
+                        return Results.BadRequest(new { error = "Invalid user data." });
 
-                var response = controller.CreateUser(user);
+                    // Optional: check required fields
+                    if (string.IsNullOrWhiteSpace(user.Firstname) || string.IsNullOrWhiteSpace(user.Lastname))
+                        return Results.BadRequest(new { error = "Firstname and Lastname are required." });
 
-                if (response.Error != null)
-                    return Results.Json(new { error = response.Error }, statusCode: response.StatusCode);
+                    if (user.Password != user.ConfirmPassword)
+                        return Results.BadRequest(new { error = "Passwords do not match." });
 
-                return Results.Json(response.Data, statusCode: response.StatusCode);
+                    if (User.GetByEmail(user.Email) != null)
+                        return Results.BadRequest(new { error = "Email already exists." });
+
+                    user.Create();
+
+                    var result = new
+                    {
+                        user.Id,
+                        user.Firstname,
+                        user.Lastname,
+                        user.Email,
+                        user.CreatedAt
+                    };
+
+                    return Results.Json(result, statusCode: 201);
+                }
+                catch (ArgumentException ex)
+                {
+                    return Results.BadRequest(new { error = ex.Message });
+                }
+                catch (Exception ex)
+                {
+                    return Results.Problem(ex.Message);
+                }
             });
 
             app.MapPost("/api/login", async (HttpContext context) =>
@@ -37,7 +64,7 @@ namespace TaskOrganizer.Routes
 
                 if (user == null)
                     return Results.BadRequest(new { error = "Invalid user data." });
- 
+  
                 var response = controller.Login(user.Email, user.Password);
 
                 if (response.Error != null)

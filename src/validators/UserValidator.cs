@@ -12,7 +12,6 @@ namespace TaskOrganizer.Validators
         {
             RuleFor(user => user.Email)
                 .NotEmpty().WithMessage("Email cannot be empty.")
-                .EmailAddress().WithMessage("Email is not valid.")
                 .Must(EmailNotExists).WithMessage("Email already exists.");
 
             RuleFor(user => user.Password)
@@ -25,7 +24,7 @@ namespace TaskOrganizer.Validators
 
             RuleFor(user => user.Firstname)
                 .NotEmpty().WithMessage("Firstname cannot be empty.");
- 
+  
             RuleFor(user => user.Lastname)
                 .NotEmpty().WithMessage("Lastname cannot be empty.");
         }
