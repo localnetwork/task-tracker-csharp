@@ -89,6 +89,8 @@ namespace TaskOrganizer.Controllers
                 }
             };
 
+            Console.WriteLine($"Registration payload: {payload}");
+
             return new ControllerResult<object>
             {
                 StatusCode = 200,
@@ -226,4 +228,3 @@ namespace TaskOrganizer.Controllers
         } 
     } 
 }
- 

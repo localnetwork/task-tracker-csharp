@@ -51,6 +51,7 @@ namespace TaskOrganizer.Models
         // }
 
         // Create user in database
+        // Create user in database
         public void Create()
         {
             using var conn = DatabaseConnection.GetConnection();
@@ -70,7 +71,7 @@ namespace TaskOrganizer.Models
             cmd.Parameters.AddWithValue("@email", this.Email);
             cmd.Parameters.AddWithValue("@createdAt", DateTime.UtcNow);
 
-            cmd.ExecuteNonQuery();
+            cmd.ExecuteNonQuery(); 
 
             cmd.CommandText = "SELECT LAST_INSERT_ID()";
             this.Id = Convert.ToInt32(cmd.ExecuteScalar());

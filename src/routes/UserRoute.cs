@@ -16,7 +16,7 @@ namespace TaskOrganizer.Routes
         {
             var controller = new UsersController();
 
-            app.MapPost("/api/register", async (HttpContext context) =>
+             app.MapPost("/api/register", async (HttpContext context) =>
             {
                 try
                 {   
@@ -37,13 +37,19 @@ namespace TaskOrganizer.Routes
 
                     user.Create();
 
+                    string token = user.GenerateJwtToken();
+
                     var result = new
                     {
-                        user.Id,
-                        user.Firstname,
-                        user.Lastname,
-                        user.Email,
-                        user.CreatedAt
+                        token = token,
+                        user = new 
+                        {
+                            id = user.Id,
+                            email = user.Email,
+                            firstname = user.Firstname,
+                            lastname = user.Lastname,
+                            created_at = user.CreatedAt
+                        }
                     };
 
                     return Results.Json(result, statusCode: 201);
@@ -56,7 +62,7 @@ namespace TaskOrganizer.Routes
                 {
                     return Results.Problem(ex.Message);
                 }
-            });
+            }); 
 
             app.MapPost("/api/login", async (HttpContext context) =>
             {
