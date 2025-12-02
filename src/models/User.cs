@@ -1,75 +1,73 @@
 using MySql.Data.MySqlClient;
 using TaskOrganizer.Config;
-using BCrypt.Net; // Add this 
+using BCrypt.Net;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-
 using DotNetEnv; 
- 
+
 namespace TaskOrganizer.Models
 {
-
-    
-    public class User
+    public class User : Person
     {
         public int Id { get; set; }
-        public string Username { get; set; } = "";
         public string Password { get; set; } = "";
-        public string Email { get; set; } = ""; 
-
-        public string Firstname { get; set; } = "";
-        public string Lastname { get; set; } = ""; 
+        public string Email { get; set; } = "";
         public DateTime CreatedAt { get; set; }
-        public object ConfirmPassword { get; internal set; }
+        public string ConfirmPassword { get; set; } = "";
 
         private static bool _loaded = false;
-        private static void LoadEnv() 
+
+        private static void LoadEnv()
         {
             if (!_loaded)
             {
-                Env.Load();   // Loads .env from root
+                Env.Load();
                 _loaded = true;
             }
-        }  
+        }
 
-        // Create method to insert this user into the database
+        // CONSTRUCTOR REQUIRED FOR Person INHERITANCE
+        public User() : base("", "") { } 
+ 
+        public User(string firstname, string lastname, string email, string password)
+            : base(firstname, lastname)
+        {
+            Email = email; 
+            Password = password;
+            CreatedAt = DateTime.UtcNow;
+        }
+
+        // Create user in database
         public void Create()
         {
             using var conn = DatabaseConnection.GetConnection();
-            conn.Open(); 
+            conn.Open();
 
-            // Hash the password before storing
             string hashedPassword = BCrypt.Net.BCrypt.HashPassword(this.Password);
 
-            string query = "INSERT INTO users (firstname, lastname, password, email, created_at) " +
-                           "VALUES (@f, @l, @p, @e, @c)";
+            string query = @"
+                INSERT INTO users (firstname, lastname, password, email, created_at)
+                VALUES (@firstname, @lastname, @password, @email, @createdAt)
+            ";
 
             using var cmd = new MySqlCommand(query, conn);
-            cmd.Parameters.AddWithValue("@f", this.Firstname);
-            cmd.Parameters.AddWithValue("@l", this.Lastname);
-            cmd.Parameters.AddWithValue("@p", hashedPassword);
-            cmd.Parameters.AddWithValue("@e", this.Email);
-            cmd.Parameters.AddWithValue("@c", DateTime.UtcNow); 
- 
-            cmd.ExecuteNonQuery(); 
+            cmd.Parameters.AddWithValue("@firstname", this.Firstname);
+            cmd.Parameters.AddWithValue("@lastname", this.Lastname);
+            cmd.Parameters.AddWithValue("@password", hashedPassword);
+            cmd.Parameters.AddWithValue("@email", this.Email);
+            cmd.Parameters.AddWithValue("@createdAt", DateTime.UtcNow);
 
-            // Get the last inserted ID
+            cmd.ExecuteNonQuery();
+
             cmd.CommandText = "SELECT LAST_INSERT_ID()";
             this.Id = Convert.ToInt32(cmd.ExecuteScalar());
         }
 
-        // Optional: Verify password
         public bool VerifyPassword(string passwordToCheck)
-        { 
+        {
             return BCrypt.Net.BCrypt.Verify(passwordToCheck, this.Password);
-        }
-
-        public void Login()  
-        { 
-            
-             
         }
 
         public static User? GetByEmail(string email)
@@ -89,28 +87,28 @@ namespace TaskOrganizer.Models
                 {
                     Id = reader.GetInt32("id"),
                     Firstname = reader.GetString("firstname"),
-                    Lastname = reader.GetString("lastname"), 
+                    Lastname = reader.GetString("lastname"),
                     Password = reader.GetString("password"),
                     Email = reader.GetString("email"),
-                    CreatedAt = reader.GetDateTime("created_at")
+                    CreatedAt = reader.GetDateTime("created_at"),
                 };
             }
 
-            return null; // User not found
+            return null;
         }
 
-        public string GenerateJwtToken() 
+        public string GenerateJwtToken()
         {
             LoadEnv();
 
-            var secretKey = Environment.GetEnvironmentVariable("JWT_SECRET") ?? "helllooooo";
+            var secretKey = Environment.GetEnvironmentVariable("JWT_SECRET") ?? "";
             if (string.IsNullOrWhiteSpace(secretKey) || secretKey.Length < 32)
-                throw new Exception("JWT_SECRET must be set and at least 32 characters long.");
+                throw new Exception("JWT_SECRET must be at least 32 characters.");
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-            var claims = new[] 
+            var claims = new[]
             {
                 new Claim(JwtRegisteredClaimNames.Sub, this.Id.ToString()),
                 new Claim(JwtRegisteredClaimNames.Email, this.Email),
@@ -120,15 +118,43 @@ namespace TaskOrganizer.Models
             };
 
             var token = new JwtSecurityToken(
-                issuer: Environment.GetEnvironmentVariable("APP_NAME") ?? "YourAppName",
-                audience: Environment.GetEnvironmentVariable("APP_NAME") ?? "YourAppName",
+                issuer: Environment.GetEnvironmentVariable("APP_NAME") ?? "TaskOrganizer",
+                audience: Environment.GetEnvironmentVariable("APP_NAME") ?? "TaskOrganizer",
                 claims: claims,
-                expires: DateTime.UtcNow.AddHours(2),
-                signingCredentials: creds
-            );
+                expires: DateTime.UtcNow.AddHours(24),
+                signingCredentials: creds 
+            ); 
 
             return new JwtSecurityTokenHandler().WriteToken(token);
+        } 
+
+        public static User? GetProfile(string email)
+    {
+        using var conn = DatabaseConnection.GetConnection(); 
+        conn.Open();
+
+        string query = "SELECT id, firstname, lastname, password, email, created_at FROM users WHERE email = @e LIMIT 1";
+
+        using var cmd = new MySqlCommand(query, conn);
+        cmd.Parameters.AddWithValue("@e", email);
+  
+        using var reader = cmd.ExecuteReader();
+ 
+        if (reader.Read())
+        {
+            return new User
+            {
+                Id = reader.GetInt32("id"),
+                Firstname = reader.GetString("firstname"),
+                Lastname = reader.GetString("lastname"),
+                Password = reader.GetString("password"), 
+                Email = reader.GetString("email"),
+                CreatedAt = reader.GetDateTime("created_at"),
+            };
         }
 
-    } 
+        return null;
+    }
+
+    }
 }

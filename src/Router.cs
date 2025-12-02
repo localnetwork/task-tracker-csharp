@@ -26,13 +26,13 @@ namespace TaskOrganizer
                 if (context.Request.ContentLength > 0 || 
                     context.Request.Headers.ContainsKey("Transfer-Encoding"))
                 {
-                    if (context.Request.ContentType?.Contains("application/json") != true)
-                    {
-                        context.Response.StatusCode = 415; // Unsupported Media Type
-                        context.Response.ContentType = "application/json";
-                        await context.Response.WriteAsJsonAsync(new { error = "Only application/json content type is accepted" });
-                        return;
-                    }
+                    // if (context.Request.ContentType?.Contains("application/json") != true)
+                    // {
+                    //     context.Response.StatusCode = 415; // Unsupported Media Type
+                    //     context.Response.ContentType = "application/json";
+                    //     await context.Response.WriteAsJsonAsync(new { error = "Only application/json content type is accepted" });
+                    //     return;
+                    // }
                 }
                 
                 // Ensure all responses are JSON

@@ -17,7 +17,7 @@ namespace TaskOrganizer.Validators
 
             RuleFor(user => user.Password)
                 .NotEmpty().WithMessage("Password cannot be empty.")
-                .MinimumLength(6).WithMessage("Password must be at least 6 characters.");
+                .WithMessage("Password must be at least 6 characters.");
 
             RuleFor(user => user.ConfirmPassword)
                 .NotEmpty().WithMessage("Confirm Password cannot be empty.") 

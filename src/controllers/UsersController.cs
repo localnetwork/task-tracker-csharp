@@ -4,6 +4,7 @@ using TaskOrganizer.Models;
 using TaskOrganizer.Validators;
 using System.Collections.Generic;
 using System.Linq;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace TaskOrganizer.Controllers
 {
@@ -14,6 +15,7 @@ namespace TaskOrganizer.Controllers
         public T? Data { get; set; }
         public object? Error { get; set; } // Can be string or dictionary
         public string Message { get; internal set; }
+        public string Token { get; internal set; }
     }
 
     // DTOs for login response
@@ -40,41 +42,57 @@ namespace TaskOrganizer.Controllers
         // --------------------
         // Registration
         // --------------------
-        public ControllerResult<User> CreateUser(User user)
+        public ControllerResult<object> CreateUser(User user)
         {
             ValidationResult result = _registerValidator.Validate(user);
 
             if (!result.IsValid)
             {
-                // Build dictionary of errors by field
                 var errors = result.Errors
                     .GroupBy(e => e.PropertyName)
                     .ToDictionary(
-                        g => g.Key.ToLower(), // field name
-                        g => g.First().ErrorMessage // first error message per field
+                        g => g.Key.ToLower(),
+                        g => g.First().ErrorMessage
                     );
 
-                return new ControllerResult<User>
+                return new ControllerResult<object>
                 {
                     StatusCode = 400,
                     Error = errors
                 };
             }
 
-            // Save user into DB
+            // Save user
             user.Create();
 
-            return new ControllerResult<User>
+            User? dbUser = User.GetByEmail(user.Email);
+            if (dbUser == null)
             {
-                StatusCode = 201,
-                Data = new User
+                return new ControllerResult<object>
                 {
-                    Id = user.Id,
-                    Email = user.Email,
-                    Firstname = user.Firstname,
-                    Lastname = user.Lastname,
-                    CreatedAt = user.CreatedAt
+                    StatusCode = 500, 
+                    Message = "User creation failed."
+                };
+            }
+
+            // Build response payload that matches your required structure
+            var payload = new
+            {
+                token = dbUser.GenerateJwtToken(),
+                user = new UserData
+                {
+                    Id = dbUser.Id,
+                    Email = dbUser.Email,
+                    Firstname = dbUser.Firstname,
+                    Lastname = dbUser.Lastname,
+                    CreatedAt = dbUser.CreatedAt
                 }
+            };
+
+            return new ControllerResult<object>
+            {
+                StatusCode = 200,
+                Data = payload
             };
         }
 
@@ -133,5 +151,79 @@ namespace TaskOrganizer.Controllers
                 } 
             };
         }
-    }
+
+        public ControllerResult<object> Profile(HttpContext context)
+        {
+            string? authHeader = context.Request.Headers["Authorization"];
+            if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))  
+            {
+                return new ControllerResult<object>
+                {
+                    StatusCode = 401,
+                    Message = "Missing or invalid token.",
+                    Error = new { token = "Token is required." } 
+                };
+            }
+
+            string token = authHeader.Substring("Bearer ".Length);
+            string email;
+
+            try
+            {
+                var handler = new JwtSecurityTokenHandler();
+                var jwt = handler.ReadJwtToken(token);
+
+                email = jwt.Claims.FirstOrDefault(c => c.Type == "email")?.Value ?? "";
+
+                if (string.IsNullOrEmpty(email))
+                {
+                    return new ControllerResult<object>
+                    {
+                        StatusCode = 401,
+                        Message = "Invalid token payload.",
+                        Error = new { token = "Email missing in token." }
+                    };
+                }
+            }
+            catch
+            {
+                return new ControllerResult<object>
+                {
+                    StatusCode = 401,
+                    Message = "Invalid token.",
+                    Error = new { token = "Token cannot be decoded." }
+                };
+            }
+
+            // Fetch user profile
+            User? dbUser = User.GetProfile(email);
+
+            if (dbUser == null)
+            {
+                return new ControllerResult<object>
+                {
+                    StatusCode = 404,
+                    Message = "User not found.",
+                    Error = new { user = "User does not exist." }
+                };
+            }
+
+            // Return fields directly under data
+            var payload = new
+            {
+                id = dbUser.Id,
+                email = dbUser.Email,
+                firstname = dbUser.Firstname,
+                lastname = dbUser.Lastname,
+                createdAt = dbUser.CreatedAt
+            };
+
+            return new ControllerResult<object>
+            {
+                StatusCode = 200,
+                Data = payload
+            };
+        } 
+    } 
 }
+ 
