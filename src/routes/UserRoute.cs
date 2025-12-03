@@ -8,6 +8,8 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using TaskOrganizer.Middlewares;
 
+using TaskOrganizer.Validators; 
+
 namespace TaskOrganizer.Routes
 {
     public static class UserRoute
@@ -15,34 +17,50 @@ namespace TaskOrganizer.Routes
         public static void Register(WebApplication app)
         {
             var controller = new UsersController();
-
-             app.MapPost("/api/register", async (HttpContext context) =>
+ 
+            app.MapPost("/api/register", async (HttpContext context) =>
             {
                 try
-                {   
-                    var user = await context.Request.ReadFromJsonAsync<User>(); 
-
+                {
+                    var user = await context.Request.ReadFromJsonAsync<User>();
+ 
                     if (user == null)
-                        return Results.BadRequest(new { error = "Invalid user data." });
+                    {
+                        return Results.BadRequest(new
+                        {
+                            error = new Dictionary<string, string>
+                            {
+                                { "email", "Invalid user data." },
+                                { "password", "Invalid user data." }
+                            }
+                        });
+                    }
 
-                    // Optional: check required fields
-                    if (string.IsNullOrWhiteSpace(user.Firstname) || string.IsNullOrWhiteSpace(user.Lastname))
-                        return Results.BadRequest(new { error = "Firstname and Lastname are required." });
+                    // Run validation 
+                    var validator = new UserRegisterValidator();
+                    var validationResult = validator.Validate(user);
 
-                    if (user.Password != user.ConfirmPassword)
-                        return Results.BadRequest(new { error = "Passwords do not match." });
+                    if (!validationResult.IsValid)
+                    {
+                        // Convert FluentValidation errors → { field: "error message" }
+                        var errors = validationResult.Errors
+                            .GroupBy(e => e.PropertyName)
+                            .ToDictionary(
+                                g => g.Key[0].ToString().ToLower() + g.Key.Substring(1), // camelCase
+                                g => g.First().ErrorMessage
+                            );
 
-                    if (User.GetByEmail(user.Email) != null)
-                        return Results.BadRequest(new { error = "Email already exists." });
+                        return Results.BadRequest(new { error = errors });
+                    }
 
+                    // Create user
                     user.Create();
-
                     string token = user.GenerateJwtToken();
 
-                    var result = new
+                    return Results.Json(new
                     {
                         token = token,
-                        user = new 
+                        user = new
                         {
                             id = user.Id,
                             email = user.Email,
@@ -50,19 +68,38 @@ namespace TaskOrganizer.Routes
                             lastname = user.Lastname,
                             created_at = user.CreatedAt
                         }
-                    };
-
-                    return Results.Json(result, statusCode: 201);
-                }
-                catch (ArgumentException ex)
-                {
-                    return Results.BadRequest(new { error = ex.Message });
+                    }, statusCode: 201);
                 }
                 catch (Exception ex)
                 {
-                    return Results.Problem(ex.Message);
+                    Console.WriteLine(ex);
+
+                    // ArgumentException from a setter (single field)
+                    if (ex is ArgumentException argEx) 
+                    {
+                        var param = argEx.ParamName ?? "error";
+                        // convert to camelCase: "Firstname" -> "firstname"
+                        var field = char.ToLowerInvariant(param[0]) + param.Substring(1);
+
+                        var errors = new Dictionary<string, string>
+                        {
+                            { field, argEx.Message }
+                        };
+
+                        return Results.BadRequest(new { error = errors });
+                    }
+
+                    // fallback
+                    return Results.BadRequest(new
+                    {
+                        error = new Dictionary<string, string>
+                        {
+                            { "error", ex.Message }  
+                        }
+                    });  
                 }
-            }); 
+            });
+
 
             app.MapPost("/api/login", async (HttpContext context) =>
             {

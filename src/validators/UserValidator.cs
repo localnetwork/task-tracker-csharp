@@ -12,16 +12,19 @@ namespace TaskOrganizer.Validators
         {
             RuleFor(user => user.Email)
                 .NotEmpty().WithMessage("Email cannot be empty.")
+                .EmailAddress().WithMessage("Email is not valid.");
+            RuleFor(user => user.Email)
+                .NotEmpty().WithMessage("Email cannot be empty.") 
                 .Must(EmailNotExists).WithMessage("Email already exists.");
 
-            RuleFor(user => user.Password)
+            RuleFor(user => user.Password)  
                 .NotEmpty().WithMessage("Password cannot be empty.")
                 .WithMessage("Password must be at least 6 characters.");
-
+ 
             RuleFor(user => user.ConfirmPassword)
                 .NotEmpty().WithMessage("Confirm Password cannot be empty.") 
                 .Equal(user => user.Password).WithMessage("Passwords do not match.");
-
+ 
             RuleFor(user => user.Firstname)
                 .NotEmpty().WithMessage("Firstname cannot be empty.");
   
@@ -36,7 +39,7 @@ namespace TaskOrganizer.Validators
             using (var conn = DatabaseConnection.GetConnection())
             {
                 conn.Open();
-                using (var cmd = new MySqlCommand(query, conn))
+                using (var cmd = new MySqlCommand(query, conn)) 
                 {
                     cmd.Parameters.AddWithValue("@e", email);
                     int count = Convert.ToInt32(cmd.ExecuteScalar());

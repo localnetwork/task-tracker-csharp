@@ -11,7 +11,7 @@ namespace TaskOrganizer.Controllers
     // Generic response wrapper
     public class ControllerResult<T>
     {
-        public int StatusCode { get; set; }
+        public int StatusCode { get; set; } 
         public T? Data { get; set; }
         public object? Error { get; set; } // Can be string or dictionary
         public string Message { get; internal set; }

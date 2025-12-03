@@ -8,36 +8,27 @@ namespace TaskOrganizer.Models
         public string Firstname
         {
             get => _firstname;
-            set
-            {
-                if (string.IsNullOrWhiteSpace(value))
-                    throw new ArgumentException("Firstname cannot be empty");
-                _firstname = value.Trim();
-            }
+            set => _firstname = value?.Trim() ?? "";
         }
+
 
         public string Lastname
         {
-            get => _lastname;
-            set
-            {
-                if (string.IsNullOrWhiteSpace(value))
-                    throw new ArgumentException("Lastname cannot be empty");
-                _lastname = value.Trim();
-            }
+            get => _lastname; 
+            set => _lastname = value?.Trim() ?? "";
         }
 
         protected Person(string firstname, string lastname)
         {
             Firstname = firstname;
             Lastname = lastname;
-        }
+        }  
 
         protected Person() { } // parameterless constructor for JSON binding
-
-        public virtual string GetFullInfo()
+         public virtual string GetFullInfo()
         {
-            return $"{Firstname} {Lastname}";
+            return $"{Firstname} {Lastname}"; 
         }
     }
 }
+ 

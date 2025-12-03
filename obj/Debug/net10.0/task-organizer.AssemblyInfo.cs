@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("task-organizer")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+19766d760acff8dd3796bc31b6c8b63d16968537")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4b8907c0e35b3100102e731bc8dc6bd06481581a")]
 [assembly: System.Reflection.AssemblyProductAttribute("task-organizer")]
 [assembly: System.Reflection.AssemblyTitleAttribute("task-organizer")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

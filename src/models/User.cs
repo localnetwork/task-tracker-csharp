@@ -51,7 +51,6 @@ namespace TaskOrganizer.Models
         // }
 
         // Create user in database
-        // Create user in database
         public void Create()
         {
             using var conn = DatabaseConnection.GetConnection();

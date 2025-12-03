@@ -4,7 +4,6 @@ using System.Linq;
 using System.Reflection;
 using MySql.Data.MySqlClient;
 using TaskOrganizer.Config;
-using TaskOrganizer.Schema;
 
 namespace TaskOrganizer.Migration
 {
@@ -18,20 +17,25 @@ namespace TaskOrganizer.Migration
             try
             {
                 conn.Open();
+                Console.WriteLine("DB Connected Successfully!");
             }
             catch (Exception ex)
             {
                 Console.WriteLine("❌ Cannot connect to database:");
-                Console.WriteLine(ex.ToString());
+                Console.WriteLine(ex);
                 return;
             }
 
             var schemas = DiscoverSchemas();
+
             if (schemas.Count == 0) return;
 
-            foreach (var schema in schemas)
+            // Sort schemas by Order (ascending)
+            var sortedSchemas = schemas.OrderBy(s => s.Order).ToList();
+
+            foreach (var schema in sortedSchemas)
             {
-                string sql = GenerateCreateTable(schema.TableName, schema.Def);
+                string sql = GenerateCreateTable(schema.TableName, schema.Def, schema.Type);
 
                 try
                 {
@@ -39,13 +43,12 @@ namespace TaskOrganizer.Migration
                     cmd.ExecuteNonQuery();
                     createdTables.Add(schema.TableName);
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // Ignore failures silently
+                    Console.WriteLine($"⚠️ Could not create table {schema.TableName}: {ex.Message}");
                 }
             }
 
-            // Only print names of tables successfully created
             if (createdTables.Count > 0)
             {
                 Console.WriteLine("✅ Tables created:");
@@ -54,9 +57,9 @@ namespace TaskOrganizer.Migration
             }
         }
 
-        private static List<(string TableName, Dictionary<string, string> Def)> DiscoverSchemas()
+        private static List<(string TableName, Dictionary<string, string> Def, Type Type, int Order)> DiscoverSchemas()
         {
-            var schemas = new List<(string, Dictionary<string, string>)>();
+            var schemas = new List<(string, Dictionary<string, string>, Type, int)>();
             var assembly = Assembly.GetExecutingAssembly();
 
             var schemaTypes = assembly.GetTypes()
@@ -68,35 +71,51 @@ namespace TaskOrganizer.Migration
             {
                 var tableNameProp = type.GetProperty("TableName", BindingFlags.Public | BindingFlags.Static);
                 var definitionProp = type.GetProperty("Definition", BindingFlags.Public | BindingFlags.Static);
+                var orderProp = type.GetProperty("Order", BindingFlags.Public | BindingFlags.Static);
 
                 if (tableNameProp != null && definitionProp != null)
                 {
                     var tableName = tableNameProp.GetValue(null) as string;
                     var definition = definitionProp.GetValue(null) as Dictionary<string, string>;
+                    int order = 10; // default
+                    if (orderProp != null)
+                        order = (int)orderProp.GetValue(null);
 
                     if (tableName != null && definition != null)
-                        schemas.Add((tableName, definition));
+                        schemas.Add((tableName, definition, type, order));
                 }
             }
 
             return schemas;
         }
 
-        private static string GenerateCreateTable(string table, Dictionary<string, string> def)
+        private static string GenerateCreateTable(string table, Dictionary<string, string> def, Type schemaType)
         {
-            var columns = new List<string>();
+            var columns = new List<string> { "id INT AUTO_INCREMENT PRIMARY KEY" };
+
             foreach (var kv in def)
-            {
                 columns.Add($"{kv.Key} {kv.Value}");
-            }
 
             string columnSql = string.Join(",\n    ", columns);
 
-            return
-$@"CREATE TABLE IF NOT EXISTS {table} (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    {columnSql}
-);";
+            string createSql = $"CREATE TABLE IF NOT EXISTS {table} (\n    {columnSql}";
+
+            // Add foreign keys if schema defines them
+            var fkProp = schemaType.GetProperty("ForeignKeys", BindingFlags.Public | BindingFlags.Static);
+            if (fkProp != null)
+            {
+                var fks = fkProp.GetValue(null) as IEnumerable<(string Column, string RefTable, string RefColumn, string OnDelete, string OnUpdate)>;
+                if (fks != null)
+                {
+                    foreach (var fk in fks)
+                    {
+                        createSql += $",\n    FOREIGN KEY ({fk.Column}) REFERENCES {fk.RefTable}({fk.RefColumn}) ON DELETE {fk.OnDelete} ON UPDATE {fk.OnUpdate}";
+                    }
+                }
+            }
+
+            createSql += "\n);";
+            return createSql;
         }
     }
 }
