@@ -55,7 +55,7 @@ namespace TaskOrganizer.Models
         {
             List<TodoTask> completedTasks = new List<TodoTask>();
             List<TodoTask> pendingTasks = new List<TodoTask>();
- 
+  
             using var conn = DatabaseConnection.GetConnection();
             conn.Open();
 
@@ -63,15 +63,15 @@ namespace TaskOrganizer.Models
             
             if (dueDate.HasValue)
             {
-                query += " AND DATE(due_date) = @dueDate";  // <-- FIXED
+                query += " AND DATE(due_date) = @dueDate"; 
             }
 
             using var cmd = new MySqlCommand(query, conn);
-            cmd.Parameters.AddWithValue("@userId", this.UserId);
+            cmd.Parameters.AddWithValue("@userId", this.UserId); 
 
             if (dueDate.HasValue)
             {
-                cmd.Parameters.AddWithValue("@dueDate", dueDate.Value.Date); // <-- FIXED (date only)
+                cmd.Parameters.AddWithValue("@dueDate", dueDate.Value.Date);
             }
 
             using var reader = cmd.ExecuteReader();
@@ -153,9 +153,8 @@ namespace TaskOrganizer.Models
                     CompletedAt = reader.IsDBNull(reader.GetOrdinal("completed_at"))
                         ? null
                         : reader.GetDateTime("completed_at")
-                };
+                }; 
             }
- 
             return null; 
         }
 

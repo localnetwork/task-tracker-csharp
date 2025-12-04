@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.IdentityModel.Tokens.Jwt;
 using System;
-using TaskOrganizer.Validators;
+
 namespace TaskOrganizer.Controllers 
 { 
     
