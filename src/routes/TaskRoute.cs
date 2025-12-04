@@ -70,59 +70,112 @@ namespace TaskOrganizer.Routes
  
             app.MapGet("/api/tasks", async (HttpContext context) =>
                 {
-                    // ---------------------------
-                    // Authenticate user
-                    // ---------------------------
-                    var authMiddleware = context.RequestServices.GetRequiredService<AuthMiddleware>();
-                    var authResult = await authMiddleware.ValidateAsync(context);
+                // ---------------------------
+                // Authenticate user
+                // ---------------------------
+                var authMiddleware = context.RequestServices.GetRequiredService<AuthMiddleware>();
+                var authResult = await authMiddleware.ValidateAsync(context);
 
-                    if (!authResult.IsValid)
+                if (!authResult.IsValid)
+                {
+                    context.Response.StatusCode = 401;
+                    await context.Response.WriteAsJsonAsync(new { error = authResult.ErrorMessage });
+                    return;
+                }
+
+                try
+                {
+                    // ---------------------------
+                    // Read and parse due_date param
+                    // ---------------------------
+                    string? dueDateParam = context.Request.Query["due_date"];
+
+                    DateTime? dueDate = null;
+                    if (!string.IsNullOrEmpty(dueDateParam))
                     {
-                        context.Response.StatusCode = 401;
-                        await context.Response.WriteAsJsonAsync(new { error = authResult.ErrorMessage });
+                        if (DateTime.TryParse(dueDateParam, out var parsedDate))
+                        {
+                            dueDate = parsedDate;
+                        }
+                    }
+
+                    // ---------------------------
+                    // Pass due_date to controller
+                    // ---------------------------
+                    var result = controller.GetTasks(
+                        userId: int.Parse(authResult.UserId),
+                        dueDate: dueDate
+                    );
+
+                    context.Response.StatusCode = result.StatusCode;
+                    await context.Response.WriteAsJsonAsync(result);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex);
+                    context.Response.StatusCode = 500;
+                    await context.Response.WriteAsJsonAsync(new
+                    {
+                        error = new Dictionary<string, string>
+                        {
+                            { "error", ex.Message }
+                        }
+                    });
+                }
+            });
+
+            app.MapPut("/api/tasks/complete", async (HttpContext context) =>
+            {
+                // --------------------------- 
+                // Authenticate user 
+                // ---------------------------
+                var authMiddleware = context.RequestServices.GetRequiredService<AuthMiddleware>();
+                var authResult = await authMiddleware.ValidateAsync(context);
+
+                if (!authResult.IsValid)
+                {
+                    context.Response.StatusCode = 401; 
+                    await context.Response.WriteAsJsonAsync(new { error = authResult.ErrorMessage });
+                    return;
+                }
+
+                try 
+                {
+                    // ---------------------------
+                    // Read task_id and validate
+                    // ---------------------------
+                    if (!int.TryParse(context.Request.Query["task_id"], out int taskId))
+                    {
+                        context.Response.StatusCode = 400;
+                        await context.Response.WriteAsJsonAsync(new { error = "Invalid or missing task_id." });
                         return;
                     }
 
-                    try
+                    // ---------------------------
+                    // Complete task via controller
+                    // ---------------------------
+                    var result = controller.CompleteTask(
+                        userId: int.Parse(authResult.UserId), 
+                        taskId: taskId
+                    );
+
+                    context.Response.StatusCode = result.StatusCode;
+                    await context.Response.WriteAsJsonAsync(result);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex);
+                    context.Response.StatusCode = 500;
+                    await context.Response.WriteAsJsonAsync(new
                     {
-                        // ---------------------------
-                        // Read and parse due_date param
-                        // ---------------------------
-                        string? dueDateParam = context.Request.Query["due_date"];
-
-                        DateTime? dueDate = null;
-                        if (!string.IsNullOrEmpty(dueDateParam))
+                        error = new Dictionary<string, string>
                         {
-                            if (DateTime.TryParse(dueDateParam, out var parsedDate))
-                            {
-                                dueDate = parsedDate;
-                            }
-                        }
+                            { "error", ex.Message }
+                        } 
+                    });
+                } 
+            });
 
-                        // ---------------------------
-                        // Pass due_date to controller
-                        // ---------------------------
-                        var result = controller.GetTasks(
-                            userId: int.Parse(authResult.UserId),
-                            dueDate: dueDate
-                        );
-
-                        context.Response.StatusCode = result.StatusCode;
-                        await context.Response.WriteAsJsonAsync(result);
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex);
-                        context.Response.StatusCode = 500;
-                        await context.Response.WriteAsJsonAsync(new
-                        {
-                            error = new Dictionary<string, string>
-                            {
-                                { "error", ex.Message }
-                            }
-                        });
-                    }
-                });
         }
     }
 }

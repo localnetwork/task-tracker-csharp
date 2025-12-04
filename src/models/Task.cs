@@ -47,7 +47,7 @@ namespace TaskOrganizer.Models
             cmd.ExecuteNonQuery();
 
             cmd.CommandText = "SELECT LAST_INSERT_ID()";
-            this.Id = Convert.ToInt32(cmd.ExecuteScalar()); 
+            this.Id = Convert.ToInt32(cmd.ExecuteScalar());  
         }
 
 
@@ -98,6 +98,66 @@ namespace TaskOrganizer.Models
             return (completedTasks, pendingTasks);
         }
 
+
+        public void MarkAsCompleted(DateTime completedAt)
+        {
+            using var conn = DatabaseConnection.GetConnection();
+            conn.Open();
+
+            string query = @" 
+                UPDATE tasks 
+                SET is_completed = @isCompleted, completed_at = @completedAt  
+                WHERE id = @taskId AND user_id = @userId
+            "; 
+
+            using var cmd = new MySqlCommand(query, conn);
+            cmd.Parameters.AddWithValue("@isCompleted", true); 
+            cmd.Parameters.AddWithValue("@completedAt", completedAt); 
+            cmd.Parameters.AddWithValue("@taskId", this.Id);
+            cmd.Parameters.AddWithValue("@userId", this.UserId);
+
+            cmd.ExecuteNonQuery();
+        }
+
+
+        public static TodoTask? GetTaskById(int taskId)
+        {
+            using var conn = DatabaseConnection.GetConnection();
+            conn.Open();
+
+            string query = "SELECT * FROM tasks WHERE id = @taskId LIMIT 1";
+            using var cmd = new MySqlCommand(query, conn);
+            cmd.Parameters.AddWithValue("@taskId", taskId);
+
+            using var reader = cmd.ExecuteReader();
+            if (reader.Read())
+            {
+                return new TodoTask
+                {
+                    Id = reader.GetInt32("id"),
+                    UserId = reader.GetInt32("user_id"),
+                    Title = reader.GetString("title"),
+
+                    Description = reader.IsDBNull(reader.GetOrdinal("description"))
+                        ? null
+                        : reader.GetString("description"),
+
+                    IsCompleted = reader.GetBoolean("is_completed"),
+
+                    CreatedAt = reader.GetDateTime("created_at"),
+
+                    DueDate = reader.IsDBNull(reader.GetOrdinal("due_date"))
+                        ? null
+                        : reader.GetDateTime("due_date"),
+
+                    CompletedAt = reader.IsDBNull(reader.GetOrdinal("completed_at"))
+                        ? null
+                        : reader.GetDateTime("completed_at")
+                };
+            }
+ 
+            return null; 
+        }
 
     }
 }

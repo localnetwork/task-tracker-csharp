@@ -76,6 +76,8 @@ namespace TaskOrganizer.Controllers
             // Save task
             task.Create();
 
+            Console.WriteLine("DUE DATE" + task.DueDate);
+
             // Prepare response 
             return new TaskControllerResult<TaskCreateResponse>
             {
@@ -97,6 +99,65 @@ namespace TaskOrganizer.Controllers
                 Message = "Task created successfully."
             };
         }
+
+        public TaskControllerResult<TodoTask> CompleteTask(int userId, int taskId)
+        {
+            try 
+            {
+                // Fetch the task first 
+                var task = TodoTask.GetTaskById(taskId); 
+
+                if (task == null) 
+                {
+                    return new TaskControllerResult<TodoTask>
+                    {
+                        StatusCode = 404,
+                        Message = "Task not found.",
+                        Data = null
+                    };
+                }
+
+                // Check if the task belongs to the user
+                if (task.UserId != userId)
+                {
+                    return new TaskControllerResult<TodoTask>  
+                    {
+                        StatusCode = 403, 
+                        Message = "You are not allowed to update this task.",
+                        Data = null
+                    };
+                }
+
+                // Mark as completed
+                var completedAt = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "Asia/Manila");
+
+                Console.WriteLine("COMPLETED AT: " + task.Title);
+                task.MarkAsCompleted(completedAt); // pass the timestamp 
+                task.IsCompleted = true;        
+                task.CompletedAt = completedAt; // update in-memory
+                task.Title = task.Title;
+                task.Description = task.Description; 
+
+                return new TaskControllerResult<TodoTask>
+                {
+                    StatusCode = 200,
+                    Message = "Task marked as completed successfully.",
+                    Data = task
+                };
+            }
+            catch (Exception ex)
+            {
+                return new TaskControllerResult<TodoTask>
+                {
+                    StatusCode = 500,
+                    Message = ex.Message,
+                    Data = null
+                };
+            }
+        }
+
+
+
 
         public TaskControllerResult<TasksGetResponse> GetTasks(int userId, DateTime? dueDate = null)
         {
